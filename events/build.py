@@ -92,6 +92,23 @@ def salt():
     return out
 
 
+def becco():
+    # Widgeten på becco.no/program/ henter fra Broadcast med en offentlig nøkkel som ligger i siden.
+    url = ("https://demo.broadcastapp.no/api/layoutWidgetCors?limit=200&venue=none&recommended=false"
+           "&hostname=becco.no&city=Oslo&widget=listingsmodal&key=5oPHFwaPPsUayOaf6UrFYBVCOOTWcAZg")
+    out = []
+    for e in get(url, True)["results"]:
+        cf = e.get("custom_fields") or {}
+        if cf.get("published") is False or (e.get("venue") or {}).get("name") != "Becco":
+            continue
+        kind = ", ".join(x for x in [cf.get("zone")] + list(e.get("tags") or []) if x)[:60]
+        note = "utsolgt" if cf.get("soldOut") else "avlyst" if cf.get("eventStatus") == "CANCELLED" else ""
+        out.append(ev(from_utc(e["start_time"]), e["name"], "Becco", cf.get("ticketUrl") or "https://becco.no/program/",
+                      kind, note, (e.get("imagekitRef") or {}).get("url", ""),
+                      group_from(f'{kind} {e["name"]}', "musikk")))
+    return out
+
+
 def konserthus():
     out = []
     for e in get("https://oslokonserthus.no/api/program", True):
@@ -277,6 +294,7 @@ SOURCES = [
     ("Rockefeller", rockefeller, "skjult API", "https://www.rockefeller.no/api/eventsEdge"),
     ("Herr Nilsen", herr_nilsen, "skjult API", "https://www.herrnilsen.no/api/eventsEdge"),
     ("SALT", salt, "widget-API", "https://www.salted.no/program"),
+    ("Becco", becco, "widget-API", "https://becco.no/program/"),
     ("Latter", latter, "HTML", "https://latter.no/forestillinger"),
     ("Nieu", nieu, "WordPress-API", "https://nieu.no/wp-json/wp/v2/arrangement"),
     ("Parkteatret", parkteatret, "HTML", "https://www.parkteatret.no/program"),
