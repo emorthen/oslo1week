@@ -6,6 +6,7 @@ Viser i dag + 7 dager frem, gruppert per dag.
 """
 import html
 import json
+import os
 import re
 import sys
 import threading
@@ -92,10 +93,23 @@ def salt():
     return out
 
 
+def local_env():
+    """Leser KEY=verdi fra events/.env (ligger i .gitignore)."""
+    try:
+        lines = (Path(__file__).parent / ".env").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+    return dict(l.split("=", 1) for l in lines if "=" in l and not l.lstrip().startswith("#"))
+
+
 def becco():
-    # Widgeten på becco.no/program/ henter fra Broadcast med en offentlig nøkkel som ligger i siden.
+    # Widgeten på becco.no/program/ henter fra Broadcast med en nøkkel. Den ligger ikke i repoet:
+    # sett BECCO_KEY som miljøvariabel (GitHub-secret) eller i events/.env lokalt.
+    key = os.environ.get("BECCO_KEY") or local_env().get("BECCO_KEY")
+    if not key:
+        raise RuntimeError("BECCO_KEY mangler")
     url = ("https://demo.broadcastapp.no/api/layoutWidgetCors?limit=200&venue=none&recommended=false"
-           "&hostname=becco.no&city=Oslo&widget=listingsmodal&key=5oPHFwaPPsUayOaf6UrFYBVCOOTWcAZg")
+           f"&hostname=becco.no&city=Oslo&widget=listingsmodal&key={key}")
     out = []
     for e in get(url, True)["results"]:
         cf = e.get("custom_fields") or {}
