@@ -21,9 +21,6 @@ DAYS_AHEAD = 7
 OUT = Path(__file__).parent / "index.html"
 UA = {"User-Agent": "Mozilla/5.0 (events-page for personal use)"}
 
-GROUPS = {"musikk": "Musikk", "humor": "Humor", "scene": "Scene", "annet": "Annet"}
-
-
 def get(url, as_json=False):
     with urlopen(Request(url, headers=UA), timeout=30) as r:
         body = r.read().decode("utf-8", "replace")
@@ -389,13 +386,9 @@ def render(events, failed, today):
                         f'<ul>{"".join(card(e) for e in rows)}</ul>'
                         f'<p class="none" hidden>Ingen treff</p></section>')
     venues = sorted({e["venue"] for e in events})
-    chips = '<button class="chip on" data-g="">Alle</button>' + "".join(
-        f'<button class="chip c-{k}" data-g="{k}">{v}</button>' for k, v in GROUPS.items()
-        if any(e["group"] == k for e in events))
-    opts = '<option value="">Alle scener</option>' + "".join(f'<option>{esc(v)}</option>' for v in venues)
     now = datetime.now(OSLO).strftime("%d.%m.%Y kl. %H:%M")
     warn = f'<p class="warn">Kunne ikke hente: {esc(", ".join(failed))}</p>' if failed else ""
-    return TEMPLATE.format(pills="".join(pills), sections="\n".join(sections), chips=chips, opts=opts,
+    return TEMPLATE.format(pills="".join(pills), sections="\n".join(sections),
                            warn=warn, now=now, total=len(events), venues=len(venues))
 
 
@@ -424,13 +417,8 @@ border-radius:12px;background:var(--card);border:1px solid var(--line);font-size
 .pill.active{{background:var(--accent);color:var(--bg);border-color:var(--accent)}}
 .pill.active i{{color:inherit;opacity:.7}}
 .tools{{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 12px}}
-.chips{{display:flex;gap:6px;flex-wrap:wrap}}
-.chip{{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:99px;padding:5px 12px;
-font:inherit;font-size:13px;cursor:pointer}}
-.chip.on{{background:var(--accent);color:var(--bg);border-color:var(--accent)}}
-input,select{{font:inherit;font-size:13px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);
+input{{flex:1;font:inherit;font-size:13px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);
 background:var(--card);color:var(--fg);min-width:0}}
-input{{flex:1 1 140px}}
 main{{max-width:760px;margin:0 auto;padding:8px 16px 64px}}
 .day{{scroll-margin-top:170px;margin-top:24px}}
 h2{{font-size:18px;margin:0 0 10px;display:flex;align-items:baseline;gap:8px}}
@@ -460,8 +448,7 @@ footer{{margin-top:40px;color:var(--mute);font-size:12px}}
 <header><div class="wrap">
 <div class="top"><h1>Oslo1Week</h1><span class="stat" id="stat">{total} arrangementer · {venues} scener</span></div>
 <nav class="days">{pills}</nav>
-<div class="tools"><div class="chips">{chips}</div>
-<select id="venue">{opts}</select><input id="q" type="search" placeholder="Søk …"></div>
+<div class="tools"><input id="q" type="search" placeholder="Søk …"></div>
 </div></header>
 <main>
 {warn}
@@ -470,13 +457,12 @@ footer{{margin-top:40px;color:var(--mute);font-size:12px}}
 </main>
 <script>
 const $=(s,r=document)=>[...r.querySelectorAll(s)];
-let g="";
 function apply(){{
-  const v=$("#venue")[0].value,q=$("#q")[0].value.trim().toLowerCase();let total=0;
+  const q=$("#q")[0].value.trim().toLowerCase();let total=0;
   $(".day").forEach(day=>{{
     let n=0;
     $(".card",day).forEach(c=>{{
-      const ok=(!g||c.dataset.group===g)&&(!v||c.dataset.venue===v)&&(!q||c.dataset.q.includes(q));
+      const ok=!q||c.dataset.q.includes(q);
       c.hidden=!ok;if(ok)n++;
     }});
     total+=n;
@@ -486,8 +472,7 @@ function apply(){{
   }});
   $("#stat")[0].textContent=total+" arrangementer";
 }}
-$(".chip").forEach(b=>b.onclick=()=>{{$(".chip").forEach(x=>x.classList.remove("on"));b.classList.add("on");g=b.dataset.g;apply()}});
-$("#venue")[0].onchange=apply;$("#q")[0].oninput=apply;
+$("#q")[0].oninput=apply;
 const now=Date.now();
 $(".card").forEach(c=>{{const t=+c.dataset.ts;if(t&&t+2*36e5<now)c.classList.add("past")}});
 const io=new IntersectionObserver(es=>es.forEach(e=>{{if(e.isIntersecting){{
