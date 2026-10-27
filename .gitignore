@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor
+.vscode/
+.idea/
+
+# Hemmeligheter, hvis du senere legger til API-nøkler
+.env
+.env.*
+
+# Midlertidige filer fra build
+*.tmp
+
+# Genereres på nytt ved hver kjøring av build.py
+events/buildlog.js

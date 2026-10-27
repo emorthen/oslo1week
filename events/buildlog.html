@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="nb"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Byggelogg</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--fg:#17171a;--mute:#6b6b73;--line:#e6e4df;
+--ok:#16a34a;--run:#2563eb;--err:#dc2626;--queue:#9ca3af;
+--discovery:#7c3aed;--decision:#0d9488;--build:#2563eb;--fix:#d97706;--issue:#dc2626;--feature:#db2777}
+@media(prefers-color-scheme:dark){:root{--bg:#0f0f12;--card:#18181c;--fg:#f0f0f2;--mute:#9a9aa3;--line:#2a2a30;
+--ok:#4ade80;--run:#60a5fa;--err:#f87171;--queue:#6b7280;
+--discovery:#a78bfa;--decision:#2dd4bf;--build:#60a5fa;--fix:#fbbf24;--issue:#f87171;--feature:#f472b6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 64px}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);
+border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
+h1{font-size:18px;margin:0;flex:1}
+.live{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--queue)}
+.live.on .dot{background:var(--ok);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.3}}
+a.btn{font-size:13px;padding:5px 12px;border:1px solid var(--line);border-radius:99px;background:var(--card);color:inherit;text-decoration:none}
+h2{font-size:15px;margin:32px 0 10px;display:flex;gap:8px;align-items:baseline}
+h2 small{font-weight:400;color:var(--mute);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.kpi b{display:block;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--mute);font-size:12px}
+.status{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.status::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c)}
+.s-ok{--c:var(--ok)} .s-running{--c:var(--run)} .s-error{--c:var(--err)} .s-queued{--c:var(--queue)}
+.s-running::before{animation:pulse 1s infinite}
+.progress{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:12px 0 4px}
+.progress>div{height:100%;background:var(--run);transition:width .4s}
+.progress.done>div{background:var(--ok)} .progress.fail>div{background:var(--err)}
+.groups{display:flex;height:10px;border-radius:99px;overflow:hidden;margin-top:12px;background:var(--line)}
+.groups i{display:block}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--mute);font-size:12px;margin-top:6px}
+.legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:5px}
+.src{display:grid;grid-template-columns:150px 1fr 130px;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.src:first-child{border-top:0}
+.src .name{font-weight:600}
+.src .name small{display:block;font-weight:400;color:var(--mute);font-size:12px}
+.bar{position:relative;height:22px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar>div{height:100%;background:var(--c);opacity:.85;transition:width .4s;min-width:3px}
+.bar>span{position:absolute;inset:0;display:flex;align-items:center;padding:0 8px;font-size:12px;font-variant-numeric:tabular-nums}
+.src .right{text-align:right;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.err{grid-column:1/-1;color:var(--err);font-size:12px;font-family:ui-monospace,monospace;overflow-wrap:anywhere}
+.runs{width:100%;border-collapse:collapse;font-size:13px}
+.runs td,.runs th{text-align:left;padding:7px 8px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.runs th{color:var(--mute);font-weight:500;font-size:12px;border-top:0}
+.tl{position:relative;margin:0;padding:0;list-style:none}
+.tl::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.phase{margin:22px 0 8px 34px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.item{position:relative;padding:0 0 12px 34px}
+.item::before{content:"";position:absolute;left:5px;top:5px;width:14px;height:14px;border-radius:50%;
+background:var(--bg);border:3px solid var(--c)}
+.item .head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.item .t{font-weight:600}
+.tag{font-size:11px;padding:1px 8px;border-radius:99px;background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c);font-weight:600}
+.src-tag{font-size:12px;color:var(--mute)}
+.item p{margin:2px 0 0;color:var(--mute)}
+.item.new{animation:flash 2s}
+@keyframes flash{from{background:color-mix(in srgb,var(--c) 20%,transparent)}}
+.k-discovery{--c:var(--discovery)} .k-decision{--c:var(--decision)} .k-build{--c:var(--build)}
+.k-fix{--c:var(--fix)} .k-issue{--c:var(--issue)} .k-feature{--c:var(--feature)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.f{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:99px;padding:3px 11px;font:inherit;font-size:12px;cursor:pointer}
+.f.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+@media(max-width:620px){.src{grid-template-columns:1fr;gap:4px}.src .right{text-align:left}}
+</style></head><body>
+<header><div class="wrap"><h1>Byggelogg · Oslo1Week</h1>
+<span class="live" id="live"><span class="dot"></span><span id="liveTxt">venter på data …</span></span>
+<a class="btn" href="index.html">Åpne siden →</a></div></header>
+<div class="wrap">
+
+<h2>Siste kjøring <small id="runInfo"></small></h2>
+<div class="card" id="current"></div>
+<div class="summary" id="kpis"></div>
+
+<h2>Tidligere kjøringer</h2>
+<div class="card"><table class="runs"><thead><tr><th>Tid</th><th>Status</th><th>Events</th><th>Kilder</th><th>Varighet</th></tr></thead>
+<tbody id="runs"></tbody></table></div>
+
+<h2>Fremdrift <small id="histCount"></small></h2>
+<div class="filters" id="filters"></div>
+<ul class="tl" id="timeline"></ul>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const KINDS={discovery:"Oppdagelse",decision:"Beslutning",build:"Bygg",fix:"Rettelse",issue:"Problem",feature:"Funksjon"};
+const GROUPS={musikk:["Musikk","#7c3aed"],humor:["Humor","#d97706"],scene:["Scene","#0d9488"],annet:["Annet","#6b7280"]};
+const STATE={ok:"Ferdig",running:"Kjører",error:"Feil",queued:"I kø"};
+let kindFilter="",seen=new Set(),first=true;
+
+const fmtTime=t=>new Date(t*1000).toLocaleString("nb-NO",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"});
+const dur=s=>s==null?"–":s<10?s.toFixed(1)+" s":Math.round(s)+" s";
+
+function renderRun(run,now){
+  const src=run.sources,done=src.filter(s=>s.state==="ok"||s.state==="error").length;
+  const failed=src.filter(s=>s.state==="error").length;
+  const pct=Math.round(done/src.length*100);
+  const end=run.finished||now;
+  const max=Math.max(1,...src.map(s=>s.fetched));
+  const cls=run.state==="running"?"":failed?"fail":"done";
+  $("#runInfo").textContent=fmtTime(run.started);
+  const groups=Object.entries(run.groups||{}),tot=groups.reduce((a,[,n])=>a+n,0)||1;
+  $("#current").innerHTML=
+   `<div style="display:flex;justify-content:space-between;align-items:baseline">
+      <span class="status s-${run.state}">${STATE[run.state]}${run.state==="running"?` · ${done}/${src.length} kilder`:""}</span>
+      <span style="color:var(--mute);font-size:12px">${dur(end-run.started)}</span></div>
+    <div class="progress ${cls}"><div style="width:${pct}%"></div></div>
+    ${groups.length?`<div class="groups">${groups.map(([g,n])=>`<i style="width:${n/tot*100}%;background:${GROUPS[g]?.[1]||"#888"}"></i>`).join("")}</div>
+    <div class="legend">${groups.map(([g,n])=>`<span style="--c:${GROUPS[g]?.[1]||"#888"}">${GROUPS[g]?.[0]||g} ${n}</span>`).join("")}</div>`:""}
+    <div style="margin-top:12px">${src.map(s=>`
+      <div class="src s-${s.state}"><div class="name">${esc(s.name)}<small>${esc(s.method)}</small></div>
+        <div class="bar" style="--c:var(--c)"><div style="width:${s.fetched/max*100}%"></div>
+          <span>${s.state==="ok"?`${s.fetched} hentet · ${s.inwindow} i perioden`:s.state==="running"?"henter …":s.state==="error"?"feilet":"venter"}</span></div>
+        <div class="right"><span class="status s-${s.state}">${STATE[s.state]}</span><br>${dur(s.state==="running"?now-s.started:s.duration)}</div>
+        ${s.error?`<div class="err">${esc(s.error)}</div>`:""}</div>`).join("")}</div>`;
+  const ok=src.filter(s=>s.state==="ok");
+  $("#kpis").innerHTML=[
+    [run.finished?run.total:ok.reduce((a,s)=>a+s.inwindow,0),"arrangementer i perioden"],
+    [ok.reduce((a,s)=>a+s.fetched,0),"hentet totalt"],
+    [`${ok.length}/${src.length}`,"kilder OK"],
+    [dur(end-run.started),"varighet"]].map(([v,l])=>`<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
+}
+
+function renderRuns(runs){
+  $("#runs").innerHTML=runs.map(r=>{
+    const ok=r.sources.filter(s=>s.state==="ok").length;
+    return `<tr><td>${fmtTime(r.started)}</td><td><span class="status s-${r.state}">${STATE[r.state]}</span></td>
+      <td>${r.total||"–"}</td><td>${ok}/${r.sources.length}</td><td>${r.finished?dur(r.finished-r.started):"–"}</td></tr>`}).join("");
+}
+
+function renderHistory(){
+  const h=window.HISTORY||[];
+  $("#histCount").textContent=h.length+" steg";
+  const kinds=[...new Set(h.map(x=>x.kind))];
+  $("#filters").innerHTML=`<button class="f ${kindFilter?"":"on"}" data-k="">Alle</button>`+
+    kinds.map(k=>`<button class="f ${kindFilter===k?"on":""}" data-k="${k}">${KINDS[k]||k} (${h.filter(x=>x.kind===k).length})</button>`).join("");
+  document.querySelectorAll(".f").forEach(b=>b.onclick=()=>{kindFilter=b.dataset.k;renderHistory()});
+  let phase=null,out="";
+  h.forEach((x,i)=>{
+    if(kindFilter&&x.kind!==kindFilter)return;
+    if(x.phase!==phase){phase=x.phase;out+=`<li class="phase">${esc(phase)}</li>`}
+    const key=x.title+x.detail,isNew=!first&&!seen.has(key);seen.add(key);
+    out+=`<li class="item k-${x.kind}${isNew?" new":""}"><div class="head"><span class="tag">${KINDS[x.kind]||x.kind}</span>
+      <span class="t">${esc(x.title)}</span>${x.source&&x.source!=="Alle"?`<span class="src-tag">· ${esc(x.source)}</span>`:""}</div>
+      <p>${esc(x.detail)}</p></li>`});
+  $("#timeline").innerHTML=out;
+}
+
+let lastSig="";
+function refresh(){
+  const d=window.BUILDLOG;
+  if(d){
+    const now=Date.now()/1000,run=d.runs[0],age=now-d.updated;
+    const live=run.state==="running"&&age<60;
+    $("#live").classList.toggle("on",live);
+    $("#liveTxt").textContent=live?"live · bygger nå":"sist oppdatert "+fmtTime(d.updated);
+    renderRun(run,now);renderRuns(d.runs);
+  }else $("#liveTxt").textContent="ingen kjøringer ennå – kjør python3 build.py";
+  const sig=JSON.stringify(window.HISTORY||[]);
+  if(sig!==lastSig){lastSig=sig;renderHistory();first=false}
+}
+
+// Last datafilene på nytt hvert sekund (fungerer også fra file://)
+function reload(){
+  for(const f of ["buildlog.js","history.js"]){
+    const s=document.createElement("script");s.src=f+"?t="+Date.now();
+    s.onload=s.onerror=()=>{s.remove();refresh()};document.head.appendChild(s);
+  }
+}
+reload();setInterval(reload,1000);
+</script></body></html>
