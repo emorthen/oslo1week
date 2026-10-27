@@ -368,8 +368,8 @@ def day_names(d, today):
     if d == today:
         return "I dag", "I dag", long
     if d == today + timedelta(days=1):
-        return "I morgen", "I morgen", long
-    return long.split(" ")[0].capitalize(), WEEKDAYS[d.weekday()][:3].capitalize() + f" {d.day}.", long
+        return "I morgen", WEEKDAYS[d.weekday()][:3].capitalize(), long
+    return long.split(" ")[0].capitalize(), WEEKDAYS[d.weekday()][:3].capitalize(), long
 
 
 def card(e):
@@ -399,7 +399,7 @@ def render(events, failed, today):
         rows = sorted((e for e in events if day_of(e) == d), key=lambda e: (sort_key(e), e["title"]))
         title, short, long = day_names(d, today)
         sub = f'<span class="sub">{esc(long)}</span>' if title in ("I dag", "I morgen") else ""
-        pills.append(f'<a href="#d{i}" class="pill" data-day="d{i}"><b>{esc(short)}</b><i>0</i></a>')
+        pills.append(f'<a href="#d{i}" class="pill" data-day="d{i}"><b>{esc(short)}</b><em>{d.day}.</em><i>0</i></a>')
         sections.append(f'<section id="d{i}" class="day"><h2>{esc(title)}{sub}<span class="count"></span></h2>'
                         f'<ul>{"".join(card(e) for e in rows)}</ul>'
                         f'<p class="none" hidden>Ingen treff</p></section>')
@@ -428,10 +428,12 @@ backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}}
 .top{{display:flex;align-items:baseline;justify-content:space-between;padding:14px 0 8px}}
 h1{{font-size:20px;margin:0;letter-spacing:-.01em}}
 .stat{{color:var(--mute);font-size:12px}}
-.days{{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}}
-.pill{{flex:none;display:flex;flex-direction:column;align-items:center;min-width:62px;padding:6px 10px;
+.days{{display:flex;gap:4px;padding:4px 0 10px}}
+.pill{{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;padding:6px 2px;
 border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:12px}}
-.pill b{{font-weight:600}} .pill i{{font-style:normal;color:var(--mute);font-size:11px}}
+.pill b{{font-weight:600;white-space:nowrap}} .pill em{{font-style:normal;font-size:11px;color:var(--mute)}}
+.pill i{{font-style:normal;color:var(--mute);font-size:11px}}
+.pill.active em{{color:inherit;opacity:.7}}
 .pill.active{{background:var(--accent);color:var(--bg);border-color:var(--accent)}}
 .pill.active i{{color:inherit;opacity:.7}}
 .tools{{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 12px}}
@@ -461,7 +463,7 @@ padding:1px 7px;border-radius:99px;background:#fee2e2;color:#b91c1c}}
 .none{{color:var(--mute);margin:4px 2px}}
 .warn{{background:#fef3c7;color:#92400e;border-radius:10px;padding:8px 12px;font-size:13px}}
 footer{{margin-top:40px;color:var(--mute);font-size:12px}}
-@media(max-width:480px){{.card a{{grid-template-columns:40px 48px 1fr;gap:10px}}.thumb{{width:48px;height:48px}}}}
+@media(max-width:480px){{.pill i{{display:none}}.card a{{grid-template-columns:40px 48px 1fr;gap:10px}}.thumb{{width:48px;height:48px}}}}
 </style></head><body>
 <header><div class="wrap">
 <div class="top"><h1>Oslo1Week</h1><span class="stat" id="stat">{total} arrangementer · {venues} scener</span></div>
